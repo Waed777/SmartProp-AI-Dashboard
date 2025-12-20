@@ -3,6 +3,12 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
+st.sidebar.header("📁 Upload Your Data")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload CSV file",
+    type=["csv"]
+)
+
 
 st.set_page_config(
     page_title="SmartProp AI | Sample Insights",
