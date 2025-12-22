@@ -12,22 +12,22 @@ import time
 # Page Config
 # =================================================
 st.set_page_config(
-    page_title="AI Smart | Global Real Estate Intelligence",
+    page_title="AI Smart | Vision 2030 Real Estate",
     layout="wide"
 )
 
 # =================================================
-# CSS Animations & Glowing Header
+# CSS - Neon Glow & Particles Background
 # =================================================
 st.markdown("""
 <style>
 @keyframes glow {
-  0% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;}
+  0% { text-shadow: 0 0 5px #fff, 0 0 10px #ff00de, 0 0 20px #ff00de, 0 0 30px #ff00de;}
   50% { text-shadow: 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de, 0 0 40px #ff00de;}
-  100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;}
+  100% { text-shadow: 0 0 5px #fff, 0 0 10px #ff00de, 0 0 20px #ff00de, 0 0 30px #ff00de;}
 }
 .glow {
-  font-size: 48px;
+  font-size: 60px;
   font-weight: bold;
   color: #fff;
   animation: glow 1.5s infinite;
@@ -40,10 +40,10 @@ body {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="glow">AI Smart</div>', unsafe_allow_html=True)
+st.markdown('<div class="glow">AI Smart - Vision 2030</div>', unsafe_allow_html=True)
 
 # =================================================
-# Sidebar – Language + Upload
+# Sidebar - Language + Upload
 # =================================================
 language = st.sidebar.selectbox("🌐 Language | اللغة", ["English", "العربية"])
 
@@ -84,32 +84,19 @@ pipeline.fit(X, y)
 predicted_price = pipeline.predict(area_data[["Demand_Index", "Risk_Score"]])[0]
 
 # =================================================
-# Animated Counters
+# Investment Score + Confidence
 # =================================================
-def animate_number(label, value, delay=0.01):
-    display = 0
-    for i in range(int(value)+1):
-        display = i
-        st.metric(label, f"{display}")
-        time.sleep(delay)
+investment_score = area_data['Demand_Index'].values[0]*0.65 - area_data['Risk_Score'].values[0]*0.35
+confidence_score = max(75, 100 - abs(predicted_price - area_data['Avg_Price'].values[0])/120)
 
-c1, c2, c3 = st.columns(3)
+# =================================================
+# Animated KPI Cards
+# =================================================
+c1, c2, c3, c4 = st.columns(4)
 c1.metric(t("Current Price", "السعر الحالي"), f"{int(area_data['Avg_Price'])} SAR")
 c2.metric(t("AI Predicted Price", "السعر المتوقع"), f"{int(predicted_price)} SAR")
-c3.metric(t("Investment Score", "درجة الاستثمار"), int(area_data['Demand_Index']*0.65 - area_data['Risk_Score']*0.35))
-
-# =================================================
-# Animated Bar Chart
-# =================================================
-st.markdown(t("## 📊 Price Comparison", "## 📊 مقارنة الأسعار"))
-chart_data = pd.DataFrame({
-    t("Type", "النوع"): [t("Current", "الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي")],
-    t("Price", "السعر"): [area_data['Avg_Price'].values[0], predicted_price]
-})
-
-fig = px.bar(chart_data, x=chart_data.columns[0], y=chart_data.columns[1], text_auto=True, color=chart_data.columns[0], color_discrete_map={t("Current", "الحالي"):'blue', t("AI Prediction", "توقع الذكاء الاصطناعي"):'orange'})
-fig.update_traces(marker_line_width=3, opacity=0.8)
-st.plotly_chart(fig, use_container_width=True)
+c3.metric(t("Investment Score", "درجة الاستثمار"), int(investment_score))
+c4.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_score)}%")
 
 # =================================================
 # Scenario Simulation Slider
@@ -120,7 +107,19 @@ simulated_price = pipeline.predict([[demand_slider, risk_slider]])[0]
 st.info(t(f"Simulated price: {int(simulated_price)} SAR/m²", f"السعر التجريبي: {int(simulated_price)} ريال/م²"))
 
 # =================================================
-# AI Chat Assistant
+# Animated Bar Chart with Trend
+# =================================================
+st.markdown(t("## 📊 Price & Investment Projection", "## 📊 توقعات السعر والاستثمار"))
+chart_data = pd.DataFrame({
+    t("Type", "النوع"): [t("Current", "الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي"), t("Simulated", "تجريبي")],
+    t("Price", "السعر"): [area_data['Avg_Price'].values[0], predicted_price, simulated_price]
+})
+fig = px.bar(chart_data, x=chart_data.columns[0], y=chart_data.columns[1], text_auto=True, color=chart_data.columns[0], color_discrete_map={t("Current", "الحالي"):'blue', t("AI Prediction", "توقع الذكاء الاصطناعي"):'orange', t("Simulated", "تجريبي"):'green'})
+fig.update_traces(marker_line_width=3, opacity=0.8)
+st.plotly_chart(fig, use_container_width=True)
+
+# =================================================
+# AI Chat Assistant with Investment Storytelling
 # =================================================
 st.markdown(t("## 💬 AI Investment Assistant", "## 💬 مساعد استثماري ذكي"))
 user_question = st.text_input(t("Ask a question...", "اكتب سؤالك هنا..."))
@@ -129,10 +128,13 @@ def ai_chat_response(question, area_data, predicted_price):
     if not question:
         return ""
     if 'why' in question.lower() or 'ليش' in question:
-        return t(f"Recommendation based on demand and risk.", f"التوصية مبنية على الطلب والمخاطرة.")
+        return t(f"The recommendation is based on demand ({area_data['Demand_Index'].values[0]}) and risk ({area_data['Risk_Score'].values[0]}).", f"التوصية مبنية على مستوى الطلب ({area_data['Demand_Index'].values[0]}) والمخاطرة ({area_data['Risk_Score'].values[0]}).")
     if 'good' in question.lower() or 'استثمار' in question:
-        return t(f"Predicted price: {int(predicted_price)} SAR/m².", f"السعر المتوقع: {int(predicted_price)} ريال/م².")
-    return t("AI insight based on demand and risk.", "تحليل الذكاء الاصطناعي بناءً على الطلب والمخاطرة.")
+        return t(f"Predicted price: {int(predicted_price)} SAR/m², high potential ROI.", f"السعر المتوقع: {int(predicted_price)} ريال/م²، عائد محتمل مرتفع.")
+    if 'simulate' in question.lower() or 'تجربة' in question:
+        simulated_price = predicted_price * 1.05
+        return t(f"Simulated price with increased demand: {int(simulated_price)} SAR/m²", f"السعر التجريبي مع زيادة الطلب: {int(simulated_price)} ريال/م²")
+    return t("AI insight based on demand, risk, and 2030 vision.", "تحليل الذكاء الاصطناعي بناءً على الطلب والمخاطرة ورؤية 2030.")
 
 if user_question:
     with st.spinner(t("Thinking...", "يتم المعالجة...")):
