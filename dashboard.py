@@ -1,149 +1,137 @@
-import streamlit as st
-import pandas as pd
+# ==========================================================
+# AI SMART – REAL ESTATE DECISION ENGINE (CORE)
+# This is NOT a dashboard. This is the brain.
+# ==========================================================
+
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-import plotly.express as px
-import plotly.graph_objects as go
-import time
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_absolute_error
 
-# =================================================
-# Page Config
-# =================================================
-st.set_page_config(
-    page_title="AI Smart | Vision 2030 Real Estate",
-    layout="wide"
-)
+# ----------------------------------------------------------
+# 1. DATA MODEL
+# ----------------------------------------------------------
+# Expected columns:
+# Area | Year | Demand_Index | Risk_Score | Avg_Price
 
-# =================================================
-# CSS - Neon Glow & Particles Background
-# =================================================
-st.markdown("""
-<style>
-@keyframes glow {
-  0% { text-shadow: 0 0 5px #fff, 0 0 10px #ff00de, 0 0 20px #ff00de, 0 0 30px #ff00de;}
-  50% { text-shadow: 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de, 0 0 40px #ff00de;}
-  100% { text-shadow: 0 0 5px #fff, 0 0 10px #ff00de, 0 0 20px #ff00de, 0 0 30px #ff00de;}
-}
-.glow {
-  font-size: 60px;
-  font-weight: bold;
-  color: #fff;
-  animation: glow 1.5s infinite;
-  text-align: center;
-}
-body {
-  background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-  color: white;
-}
-</style>
-""", unsafe_allow_html=True)
+class RealEstateAIEngine:
+    def __init__(self, data: pd.DataFrame):
+        self.data = data.copy()
+        self.model = None
+        self.scaler = StandardScaler()
+        self.features = ["Demand_Index", "Risk_Score", "Year"]
+        self.target = "Avg_Price"
 
-st.markdown('<div class="glow">AI Smart - Vision 2030</div>', unsafe_allow_html=True)
+    # ------------------------------------------------------
+    # 2. TRAIN MODEL (CORE INTELLIGENCE)
+    # ------------------------------------------------------
+    def train(self):
+        X = self.data[self.features]
+        y = self.data[self.target]
 
-# =================================================
-# Sidebar - Language + Upload
-# =================================================
-language = st.sidebar.selectbox("🌐 Language | اللغة", ["English", "العربية"])
+        self.model = Pipeline([
+            ("scaler", self.scaler),
+            ("regressor", LinearRegression())
+        ])
 
-def t(en, ar):
-    return en if language == "English" else ar
+        self.model.fit(X, y)
+        return "AI Engine trained successfully"
 
-st.sidebar.header(t("📁 Upload Your Data", "📁 رفع البيانات"))
-uploaded_file = st.sidebar.file_uploader(t("Upload CSV file", "ارفع ملف CSV"), type=["csv"])
+    # ------------------------------------------------------
+    # 3. PRICE FORECAST (FUTURE THINKING)
+    # ------------------------------------------------------
+    def forecast_price(self, area, year, demand, risk):
+        input_df = pd.DataFrame([[demand, risk, year]], columns=self.features)
+        prediction = self.model.predict(input_df)[0]
+        return round(prediction, 2)
 
-# =================================================
-# Load Data
-# =================================================
-if uploaded_file:
-    data = pd.read_csv(uploaded_file)
-else:
+    # ------------------------------------------------------
+    # 4. INVESTMENT SCORE (DECISION LOGIC)
+    # ------------------------------------------------------
+    def investment_score(self, demand, risk):
+        score = (0.7 * demand) - (0.4 * risk)
+        return round(score, 2)
+
+    # ------------------------------------------------------
+    # 5. RISK SIMULATION (MONTE CARLO LIGHT)
+    # ------------------------------------------------------
+    def risk_simulation(self, demand, risk, year, runs=500):
+        results = []
+        for _ in range(runs):
+            d = np.random.normal(demand, 5)
+            r = np.random.normal(risk, 5)
+            price = self.forecast_price("X", year, d, r)
+            results.append(price)
+
+        return {
+            "min": np.min(results),
+            "max": np.max(results),
+            "expected": np.mean(results)
+        }
+
+    # ------------------------------------------------------
+    # 6. EXPLAINABILITY (WHY AI DECIDED THIS)
+    # ------------------------------------------------------
+    def explain_decision(self, demand, risk):
+        explanation = []
+
+        if demand > 75:
+            explanation.append("High demand is driving price appreciation")
+        else:
+            explanation.append("Moderate demand limits upside")
+
+        if risk > 60:
+            explanation.append("Risk level is suppressing valuation")
+        else:
+            explanation.append("Risk is within acceptable investment range")
+
+        return explanation
+
+    # ------------------------------------------------------
+    # 7. EXECUTIVE SUMMARY (INVESTOR LANGUAGE)
+    # ------------------------------------------------------
+    def executive_summary(self, area, year, demand, risk):
+        price = self.forecast_price(area, year, demand, risk)
+        score = self.investment_score(demand, risk)
+        sim = self.risk_simulation(demand, risk, year)
+
+        verdict = "STRONG OPPORTUNITY" if score > 40 else "CAUTION"
+
+        return {
+            "Area": area,
+            "Year": year,
+            "AI_Price": price,
+            "Investment_Score": score,
+            "Risk_Range": sim,
+            "Verdict": verdict,
+            "Narrative": self.explain_decision(demand, risk)
+        }
+
+
+# ----------------------------------------------------------
+# 8. SAMPLE USAGE (THIS IS HOW BIG BOYS USE IT)
+# ----------------------------------------------------------
+if __name__ == "__main__":
     data = pd.DataFrame({
-        "Area": ["North Riyadh", "East Riyadh", "West Riyadh", "South Riyadh"],
-        "Demand_Index": [90, 75, 65, 70],
-        "Risk_Score": [35, 45, 60, 55],
-        "Avg_Price": [8500, 7200, 6100, 6500]
+        "Area": ["North Riyadh"] * 6,
+        "Year": [2020, 2021, 2022, 2023, 2024, 2025],
+        "Demand_Index": [60, 65, 70, 80, 85, 90],
+        "Risk_Score": [55, 50, 48, 45, 40, 35],
+        "Avg_Price": [6200, 6500, 6900, 7600, 8200, 8800]
     })
 
-# =================================================
-# Area Selection
-# =================================================
-st.sidebar.header(t("📍 Select Area", "📍 اختر المنطقة"))
-selected_area = st.sidebar.selectbox(t("Area", "المنطقة"), data["Area"].unique())
-area_data = data[data["Area"] == selected_area]
+    engine = RealEstateAIEngine(data)
+    engine.train()
 
-# =================================================
-# ML Prediction
-# =================================================
-X = data[["Demand_Index", "Risk_Score"]]
-y = data["Avg_Price"]
+    report = engine.executive_summary(
+        area="North Riyadh",
+        year=2030,
+        demand=95,
+        risk=30
+    )
 
-pipeline = Pipeline([('scaler', StandardScaler()), ('model', LinearRegression())])
-pipeline.fit(X, y)
-predicted_price = pipeline.predict(area_data[["Demand_Index", "Risk_Score"]])[0]
-
-# =================================================
-# Investment Score + Confidence
-# =================================================
-investment_score = area_data['Demand_Index'].values[0]*0.65 - area_data['Risk_Score'].values[0]*0.35
-confidence_score = max(75, 100 - abs(predicted_price - area_data['Avg_Price'].values[0])/120)
-
-# =================================================
-# Animated KPI Cards
-# =================================================
-c1, c2, c3, c4 = st.columns(4)
-c1.metric(t("Current Price", "السعر الحالي"), f"{int(area_data['Avg_Price'])} SAR")
-c2.metric(t("AI Predicted Price", "السعر المتوقع"), f"{int(predicted_price)} SAR")
-c3.metric(t("Investment Score", "درجة الاستثمار"), int(investment_score))
-c4.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_score)}%")
-
-# =================================================
-# Scenario Simulation Slider
-# =================================================
-demand_slider = st.slider(t("Simulate Demand", "تجربة الطلب"), 50, 120, int(area_data['Demand_Index']))
-risk_slider = st.slider(t("Simulate Risk", "تجربة المخاطرة"), 20, 80, int(area_data['Risk_Score']))
-simulated_price = pipeline.predict([[demand_slider, risk_slider]])[0]
-st.info(t(f"Simulated price: {int(simulated_price)} SAR/m²", f"السعر التجريبي: {int(simulated_price)} ريال/م²"))
-
-# =================================================
-# Animated Bar Chart with Trend
-# =================================================
-st.markdown(t("## 📊 Price & Investment Projection", "## 📊 توقعات السعر والاستثمار"))
-chart_data = pd.DataFrame({
-    t("Type", "النوع"): [t("Current", "الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي"), t("Simulated", "تجريبي")],
-    t("Price", "السعر"): [area_data['Avg_Price'].values[0], predicted_price, simulated_price]
-})
-fig = px.bar(chart_data, x=chart_data.columns[0], y=chart_data.columns[1], text_auto=True, color=chart_data.columns[0], color_discrete_map={t("Current", "الحالي"):'blue', t("AI Prediction", "توقع الذكاء الاصطناعي"):'orange', t("Simulated", "تجريبي"):'green'})
-fig.update_traces(marker_line_width=3, opacity=0.8)
-st.plotly_chart(fig, use_container_width=True)
-
-# =================================================
-# AI Chat Assistant with Investment Storytelling
-# =================================================
-st.markdown(t("## 💬 AI Investment Assistant", "## 💬 مساعد استثماري ذكي"))
-user_question = st.text_input(t("Ask a question...", "اكتب سؤالك هنا..."))
-
-def ai_chat_response(question, area_data, predicted_price):
-    if not question:
-        return ""
-    if 'why' in question.lower() or 'ليش' in question:
-        return t(f"The recommendation is based on demand ({area_data['Demand_Index'].values[0]}) and risk ({area_data['Risk_Score'].values[0]}).", f"التوصية مبنية على مستوى الطلب ({area_data['Demand_Index'].values[0]}) والمخاطرة ({area_data['Risk_Score'].values[0]}).")
-    if 'good' in question.lower() or 'استثمار' in question:
-        return t(f"Predicted price: {int(predicted_price)} SAR/m², high potential ROI.", f"السعر المتوقع: {int(predicted_price)} ريال/م²، عائد محتمل مرتفع.")
-    if 'simulate' in question.lower() or 'تجربة' in question:
-        simulated_price = predicted_price * 1.05
-        return t(f"Simulated price with increased demand: {int(simulated_price)} SAR/m²", f"السعر التجريبي مع زيادة الطلب: {int(simulated_price)} ريال/م²")
-    return t("AI insight based on demand, risk, and 2030 vision.", "تحليل الذكاء الاصطناعي بناءً على الطلب والمخاطرة ورؤية 2030.")
-
-if user_question:
-    with st.spinner(t("Thinking...", "يتم المعالجة...")):
-        answer = ai_chat_response(user_question, area_data, predicted_price)
-    st.success(answer)
-
-# =================================================
-# CTA Animated Button
-# =================================================
-st.markdown("---")
-if st.button(t("🚀 Subscribe Now", "🚀 اشترك الآن")):
-    st.balloons()
+    print("\nAI EXECUTIVE REPORT")
+    for k, v in report.items():
+        print(f"{k}: {v}")
