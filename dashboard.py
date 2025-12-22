@@ -125,7 +125,7 @@ else:
     recommendation = t("❌ High Risk", "❌ مخاطرة عالية")
 
 # =================================================
-# Market Summary
+# Market Summary + KPI Cards
 # =================================================
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(t("Current Price", "السعر الحالي"), f"{int(area_data['Avg_Price'])} SAR")
@@ -134,9 +134,9 @@ c3.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_s
 c4.metric(t("Investment Score", "درجة الاستثمار"), int(investment_score))
 
 # =================================================
-# Visualization (Enhanced)
+# Visualization (Interactive + Heatmap)
 # =================================================
-st.markdown(t("## 📈 Price Outlook", "## 📈 توقعات السعر"))
+st.markdown(t("## 📈 Price & Investment Outlook", "## 📈 توقعات السعر والاستثمار"))
 
 chart_data = pd.DataFrame({
     t("Type", "النوع"): [t("Current Price", "السعر الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي")],
@@ -152,7 +152,7 @@ fig = px.bar(
     color_discrete_map={t("Current Price", "السعر الحالي"):"blue", t("AI Prediction", "توقع الذكاء الاصطناعي"):"orange"}
 )
 
-# Add Trend Line Simulation (WOW effect)
+# Add Trend Line Simulation
 fig.add_trace(go.Scatter(
     x=[t("Current Price", "السعر الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي")],
     y=[area_data["Avg_Price"].values[0], predicted_price * 1.05],
@@ -164,26 +164,29 @@ fig.add_trace(go.Scatter(
 st.plotly_chart(fig, use_container_width=True)
 
 # =================================================
-# Explainable AI (Feature Importance)
+# Explainable AI (Feature Importance + Scenario)
 # =================================================
-st.markdown(t("## 🧠 AI Explanation & Feature Importance", "## 🧠 شرح الذكاء الاصطناعي"))
+st.markdown(t("## 🧠 AI Explanation & Scenario Simulation", "## 🧠 شرح الذكاء الاصطناعي و تجربة السيناريو"))
 feature_importance = pd.DataFrame({
     "Feature": ["Demand_Index", "Risk_Score"],
     "Contribution": [area_data["Demand_Index"].values[0]*0.65, -area_data["Risk_Score"].values[0]*0.35]
 })
-
 st.bar_chart(feature_importance.set_index("Feature"))
 
+# Scenario Slider
+demand_slider = st.slider(t("Simulate Demand", "تجربة الطلب"), 50, 120, int(area_data["Demand_Index"]))
+risk_slider = st.slider(t("Simulate Risk", "تجربة المخاطرة"), 20, 80, int(area_data["Risk_Score"]))
+simulated_price = pipeline.predict([[demand_slider, risk_slider]])[0]
 st.info(t(
-    f"The model predicts prices mainly based on demand strength and risk exposure. In {selected_area}, demand is high relative to risk, leading to a recommendation of {recommendation}.",
-    f"يعتمد النموذج على قوة الطلب ومستوى المخاطرة. في {selected_area} الطلب مرتفع مقارنة بالمخاطرة، لذلك التوصية هي: {recommendation}."
+    f"Simulated scenario: With demand {demand_slider} and risk {risk_slider}, predicted price could reach {int(simulated_price)} SAR/m².",
+    f"السيناريو التجريبي: مع طلب {demand_slider} ومخاطرة {risk_slider}, السعر المتوقع قد يصل إلى {int(simulated_price)} ريال/م²."
 ))
 
 # =================================================
-# Executive Summary & ROI Calculator
+# Executive Summary + ROI Calculator
 # =================================================
 st.markdown(t("## 🧾 Executive Summary & ROI", "## 🧾 ملخص تنفيذي و العائد المتوقع"))
-roi = predicted_price / area_data['Avg_Price'].values[0] * 100 - 100
+roi = simulated_price / area_data['Avg_Price'].values[0] * 100 - 100
 st.success(t(
     f"This AI-driven analysis indicates that {selected_area} represents a {recommendation} scenario with {int(confidence_score)}% confidence. Estimated ROI: {roi:.2f}%.",
     f"يشير هذا التحليل إلى أن {selected_area} تمثل {recommendation} بدقة {int(confidence_score)}%. العائد المتوقع: {roi:.2f}%."
@@ -216,7 +219,6 @@ def ai_chat_response(question, area_data, predicted_price, recommendation):
     risk = area_data["Risk_Score"].values[0]
     current_price = area_data["Avg_Price"].values[0]
 
-    # Advanced responses
     if "why" in question.lower() or "ليش" in question:
         return t(
             f"The recommendation is based on demand ({demand}) and risk ({risk}). High demand with controlled risk supports this decision.",
@@ -235,7 +237,6 @@ def ai_chat_response(question, area_data, predicted_price, recommendation):
             "المقارنة بين المناطق متاحة في نسخة الشركات."
         )
 
-    # Scenario suggestion (WOW effect)
     if "simulate" in question.lower() or "تجربة" in question:
         simulated_price = predicted_price * 1.05
         return t(
