@@ -1,181 +1,239 @@
-# =================================================
-# SmartProp AI - Global Creative Investment Platform
-# =================================================
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import plotly.express as px
 
 # =================================================
-# PAGE CONFIG
+# Page Config
 # =================================================
 st.set_page_config(
-    page_title="SmartProp AI",
-    page_icon="🏙️",
+    page_title="SmartProp AI | Global Real Estate Intelligence",
     layout="wide"
 )
 
 # =================================================
-# LANGUAGE ENGINE
+# Language Toggle
 # =================================================
+language = st.sidebar.selectbox("🌐 Language | اللغة", ["English", "العربية"])
+
 def t(en, ar):
-    return en if st.session_state.language == "EN" else ar
-
-if "language" not in st.session_state:
-    st.session_state.language = "AR"
-
-col1, col2 = st.columns([7,1])
-with col2:
-    if st.button("🌐 EN / AR"):
-        st.session_state.language = "EN" if st.session_state.language == "AR" else "AR"
+    return en if language == "English" else ar
 
 # =================================================
-# BRANDING
+# Sidebar – Upload
 # =================================================
-st.markdown(t(
-    "# 🏙️ SmartProp AI\n### Global AI Investment Assistant",
-    "# 🏙️ SmartProp AI\n### منصة الذكاء الاستثماري العالمية"
+st.sidebar.header(t("📁 Upload Your Data", "📁 رفع البيانات"))
+uploaded_file = st.sidebar.file_uploader(
+    t("Upload CSV file", "ارفع ملف CSV"),
+    type=["csv"]
+)
+
+st.sidebar.markdown(t(
+"""
+**Required Columns**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+""",
+"""
+**الأعمدة المطلوبة**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+"""
 ))
+
+# =================================================
+# Load Data (Automation)
+# =================================================
+if uploaded_file:
+    data = pd.read_csv(uploaded_file)
+    st.sidebar.success(t("✅ Data uploaded successfully", "✅ تم رفع البيانات بنجاح"))
+else:
+    data = pd.DataFrame({
+        "Area": ["North Riyadh", "East Riyadh", "West Riyadh", "South Riyadh"],
+        "Demand_Index": [90, 75, 65, 70],
+        "Risk_Score": [35, 45, 60, 55],
+        "Avg_Price": [8500, 7200, 6100, 6500]
+    })
+
+required_columns = {"Area", "Demand_Index", "Risk_Score", "Avg_Price"}
+if not required_columns.issubset(data.columns):
+    st.error(t(
+        "CSV must contain required columns",
+        "ملف CSV لا يحتوي على الأعمدة المطلوبة"
+    ))
+    st.stop()
+
+# =================================================
+# Header
+# =================================================
+st.title(t(
+    "📊 SmartProp AI – Global Real Estate Decision Engine",
+    "📊 سمارت بروب AI – محرك قرارات عقارية ذكي"
+))
+st.subheader(t(
+    "AI-powered predictions for executives & investors",
+    "تنبؤات مدعومة بالذكاء الاصطناعي لصناع القرار"
+))
+
+# =================================================
+# Area Selection
+# =================================================
+st.sidebar.header(t("📍 Select Area", "📍 اختر المنطقة"))
+selected_area = st.sidebar.selectbox(t("Area", "المنطقة"), data["Area"].unique())
+area_data = data[data["Area"] == selected_area]
+
+# =================================================
+# AI / ML PIPELINE (Automation)
+# =================================================
+X = data[["Demand_Index", "Risk_Score"]]
+y = data["Avg_Price"]
+
+pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LinearRegression())
+])
+
+pipeline.fit(X, y)
+
+predicted_price = pipeline.predict(
+    area_data[["Demand_Index", "Risk_Score"]]
+)[0]
+
+# =================================================
+# Confidence + Investment Score
+# =================================================
+confidence_score = max(75, 100 - abs(predicted_price - area_data["Avg_Price"].values[0]) / 120)
+
+investment_score = (
+    area_data["Demand_Index"].values[0] * 0.65
+    - area_data["Risk_Score"].values[0] * 0.35
+)
+
+if investment_score > 45:
+    recommendation = t("🔥 Strong Buy", "🔥 فرصة استثمار قوية")
+elif investment_score > 25:
+    recommendation = t("⚠️ Monitor Closely", "⚠️ راقب بحذر")
+else:
+    recommendation = t("❌ High Risk", "❌ مخاطرة عالية")
+
+# =================================================
+# Market Summary
+# =================================================
+st.markdown(t("## 📌 Market Summary", "## 📌 ملخص السوق"))
+
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric(t("Current Price", "السعر الحالي"), f"{int(area_data['Avg_Price'])} SAR")
+c2.metric(t("AI Predicted Price", "السعر المتوقع بالذكاء الاصطناعي"), f"{int(predicted_price)} SAR")
+c3.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_score)}%")
+c4.metric(t("Investment Score", "درجة الاستثمار"), int(investment_score))
+
+# =================================================
+# Visualization
+# =================================================
+st.markdown(t("## 📈 Price Outlook", "## 📈 توقعات السعر"))
+
+chart_data = pd.DataFrame({
+    t("Type", "النوع"): [t("Current Price", "السعر الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي")],
+    t("Price", "السعر"): [area_data["Avg_Price"].values[0], predicted_price]
+})
+
+fig = px.bar(
+    chart_data,
+    x=chart_data.columns[0],
+    y=chart_data.columns[1],
+    text_auto=True
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# =================================================
+# Explainable AI (WOW)
+# =================================================
+st.markdown(t("## 🧠 AI Explanation", "## 🧠 شرح قرار الذكاء الاصطناعي"))
+st.info(t(
+    f"The model predicts prices mainly based on demand strength and risk exposure. "
+    f"In {selected_area}, demand is high relative to risk, leading to a recommendation of {recommendation}.",
+    f"يعتمد النموذج على قوة الطلب ومستوى المخاطرة. "
+    f"في {selected_area} الطلب مرتفع مقارنة بالمخاطرة، لذلك التوصية هي: {recommendation}."
+))
+
+# =================================================
+# Executive Summary
+# =================================================
+st.markdown(t("## 🧾 Executive Summary", "## 🧾 ملخص تنفيذي"))
+st.success(t(
+    f"This AI-driven analysis indicates that {selected_area} represents "
+    f"a {recommendation} scenario with {int(confidence_score)}% confidence. "
+    f"Designed for C-level strategic decisions.",
+    f"يشير هذا التحليل إلى أن {selected_area} تمثل "
+    f"{recommendation} بدقة {int(confidence_score)}%. "
+    f"مخصص لدعم قرارات الإدارة العليا."
+))
+
+# =================================================
+# CTA
+# =================================================
+st.markdown("---")
+st.markdown(t(
+    "## 🚀 Want enterprise-grade AI insights?",
+    "## 🚀 هل تريد حلول ذكاء اصطناعي بمستوى الشركات الكبرى؟"
+))
+st.button(t("Book a Free Demo", "احجز عرضًا تجريبيًا"))
+# =================================================
+# AI CHAT ASSISTANT
+# =================================================
+st.markdown(t("## 💬 AI Investment Assistant", "## 💬 مساعد استثماري ذكي"))
 
 st.markdown(t(
     "Ask SmartProp AI about this market",
     "اسألي SmartProp AI عن هذا السوق"
 ))
 
-# =================================================
-# USER PROFILE
-# =================================================
-st.sidebar.markdown(t("## Investor Profile", "## ملف المستثمر"))
-
-budget = st.sidebar.selectbox(
-    t("Budget", "الميزانية"),
-    ["< 500K", "500K - 1M", "1M - 3M", "3M+"]
+user_question = st.text_input(
+    t("Type your question here...", "اكتبي سؤالك هنا...")
 )
 
-risk_tolerance = st.sidebar.selectbox(
-    t("Risk Tolerance", "تحمل المخاطر"),
-    ["Low", "Medium", "High"]
-)
-
-investment_goal = st.sidebar.selectbox(
-    t("Goal", "الهدف"),
-    ["Short Term", "Long Term", "Rental Income"]
-)
-
-user_profile = {
-    "budget": budget,
-    "risk": risk_tolerance,
-    "goal": investment_goal
-}
-
-# =================================================
-# MARKET DATA (Mock – Replace Later)
-# =================================================
-area_data = pd.DataFrame({
-    "Area": ["North Riyadh"],
-    "Demand_Index": [78],
-    "Risk_Score": [42],
-    "Avg_Price": [5100]
-})
-
-selected_area = area_data["Area"][0]
-predicted_price = 5900
-recommendation = "Buy"
-
-# =================================================
-# CHAT MEMORY
-# =================================================
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# =================================================
-# AI CHAT CORE (Extended from Old Code)
-# =================================================
-def ai_chat_response(
-    question,
-    area_data,
-    predicted_price,
-    recommendation,
-    user_profile
-):
+def ai_chat_response(question, area_data, predicted_price, recommendation):
     demand = area_data["Demand_Index"].values[0]
     risk = area_data["Risk_Score"].values[0]
     current_price = area_data["Avg_Price"].values[0]
 
-    q = question.lower()
-
-    # WHY
-    if "why" in q or "ليش" in q or "لماذا" in q:
+    if "why" in question.lower() or "ليش" in question:
         return t(
-            f"""
-            📌 Recommendation Logic:
-            - Demand Index: {demand}
-            - Risk Score: {risk}
-            - User Risk Preference: {user_profile['risk']}
-
-            High demand with acceptable risk supports this recommendation.
-            """,
-            f"""
-            📌 منطق التوصية:
-            - مؤشر الطلب: {demand}
-            - المخاطرة: {risk}
-            - تحمل المستخدم للمخاطر: {user_profile['risk']}
-
-            الطلب المرتفع مع مخاطرة مقبولة يدعم هذه التوصية.
-            """
+            f"The recommendation is based on demand ({demand}) and risk ({risk}). "
+            f"High demand with controlled risk supports this decision.",
+            f"التوصية مبنية على مستوى الطلب ({demand}) والمخاطرة ({risk}). "
+            f"الطلب المرتفع مع مخاطرة متحكم بها يدعم هذا القرار."
         )
 
-    # IS IT GOOD INVESTMENT
-    if any(word in q for word in ["good", "استثمار", "مناسب", "شراء"]):
+    if "good" in question.lower() or "استثمار" in question:
         return t(
-            f"""
-            📊 Investment Insight:
-            - Area: {selected_area}
-            - Current Price: {current_price} SAR/m²
-            - Predicted Price: {predicted_price} SAR/m²
-            - AI Recommendation: {recommendation}
-
-            Based on AI models, this area aligns with your investment profile.
-            """,
-            f"""
-            📊 تحليل استثماري:
-            - المنطقة: {selected_area}
-            - السعر الحالي: {current_price} ريال/م²
-            - السعر المتوقع: {predicted_price} ريال/م²
-            - توصية الذكاء الاصطناعي: {recommendation}
-
-            التحليل يتوافق مع ملفك الاستثماري.
-            """
+            f"Based on AI analysis, {selected_area} shows a predicted price of "
+            f"{int(predicted_price)} SAR/m² compared to the current {current_price}. "
+            f"This suggests: {recommendation}.",
+            f"بناءً على تحليل الذكاء الاصطناعي، السعر المتوقع في {selected_area} هو "
+            f"{int(predicted_price)} ريال/م² مقارنة بالسعر الحالي {current_price}. "
+            f"وهذا يشير إلى: {recommendation}."
         )
 
-    # COMPARE
-    if "compare" in q or "قارن" in q or "مقارنة" in q:
+    if "compare" in question.lower() or "قارن" in question:
         return t(
-            "📈 Area comparison is available in the Enterprise version.",
-            "📈 المقارنة بين المناطق متاحة في نسخة الشركات."
+            "Comparison across areas is available in the Enterprise version.",
+            "المقارنة بين المناطق متاحة في نسخة الشركات."
         )
 
-    # FORECAST
-    if "future" in q or "توقع" in q or "مستقبل" in q:
-        growth = ((predicted_price - current_price) / current_price) * 100
-        return t(
-            f"Expected growth is approximately {growth:.1f}% over the next period.",
-            f"النمو المتوقع تقريبًا {growth:.1f}% خلال الفترة القادمة."
-        )
-
-    # DEFAULT
     return t(
-        "This insight is generated using AI-driven demand, risk, and price models.",
-        "هذه الرؤية مبنية على نماذج ذكاء اصطناعي للطلب والمخاطر والأسعار."
+        "This insight is based on AI-driven demand, risk, and price modeling.",
+        "هذه الرؤية مبنية على نماذج ذكاء اصطناعي للطلب والمخاطرة والأسعار."
     )
-
-# =================================================
-# CHAT UI
-# =================================================
-user_question = st.text_input(
-    t("Type your question here...", "اكتبي سؤالك هنا...")
-)
 
 if user_question:
     with st.spinner(t("SmartProp AI is thinking...", "SmartProp AI يفكر...")):
@@ -183,38 +241,7 @@ if user_question:
             user_question,
             area_data,
             predicted_price,
-            recommendation,
-            user_profile
+            recommendation
         )
+    st.success(answer)
 
-        st.session_state.chat_history.append({
-            "time": datetime.now().strftime("%H:%M"),
-            "question": user_question,
-            "answer": answer
-        })
-
-# =================================================
-# CHAT HISTORY
-# =================================================
-for chat in reversed(st.session_state.chat_history):
-    st.markdown(f"**🧑‍💼 {chat['question']}**")
-    st.success(chat["answer"])
-
-# =================================================
-# MARKET DASHBOARD
-# =================================================
-st.markdown(t("## 📈 Market Dashboard", "## 📈 لوحة السوق"))
-
-c1, c2, c3 = st.columns(3)
-c1.metric(t("Demand Index", "مؤشر الطلب"), area_data["Demand_Index"][0])
-c2.metric(t("Risk Score", "مؤشر المخاطر"), area_data["Risk_Score"][0])
-c3.metric(t("Predicted Price", "السعر المتوقع"), f"{predicted_price} SAR/m²")
-
-# =================================================
-# FOOTER
-# =================================================
-st.markdown("---")
-st.markdown(t(
-    "SmartProp AI © 2025 – Global Creative Investment Platform",
-    "SmartProp AI © 2025 – منصة استثمارية إبداعية عالمية"
-))
