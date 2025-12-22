@@ -187,3 +187,61 @@ st.markdown(t(
     "## 🚀 هل تريد حلول ذكاء اصطناعي بمستوى الشركات الكبرى؟"
 ))
 st.button(t("Book a Free Demo", "احجز عرضًا تجريبيًا"))
+# =================================================
+# AI CHAT ASSISTANT
+# =================================================
+st.markdown(t("## 💬 AI Investment Assistant", "## 💬 مساعد استثماري ذكي"))
+
+st.markdown(t(
+    "Ask SmartProp AI about this market",
+    "اسألي SmartProp AI عن هذا السوق"
+))
+
+user_question = st.text_input(
+    t("Type your question here...", "اكتبي سؤالك هنا...")
+)
+
+def ai_chat_response(question, area_data, predicted_price, recommendation):
+    demand = area_data["Demand_Index"].values[0]
+    risk = area_data["Risk_Score"].values[0]
+    current_price = area_data["Avg_Price"].values[0]
+
+    if "why" in question.lower() or "ليش" in question:
+        return t(
+            f"The recommendation is based on demand ({demand}) and risk ({risk}). "
+            f"High demand with controlled risk supports this decision.",
+            f"التوصية مبنية على مستوى الطلب ({demand}) والمخاطرة ({risk}). "
+            f"الطلب المرتفع مع مخاطرة متحكم بها يدعم هذا القرار."
+        )
+
+    if "good" in question.lower() or "استثمار" in question:
+        return t(
+            f"Based on AI analysis, {selected_area} shows a predicted price of "
+            f"{int(predicted_price)} SAR/m² compared to the current {current_price}. "
+            f"This suggests: {recommendation}.",
+            f"بناءً على تحليل الذكاء الاصطناعي، السعر المتوقع في {selected_area} هو "
+            f"{int(predicted_price)} ريال/م² مقارنة بالسعر الحالي {current_price}. "
+            f"وهذا يشير إلى: {recommendation}."
+        )
+
+    if "compare" in question.lower() or "قارن" in question:
+        return t(
+            "Comparison across areas is available in the Enterprise version.",
+            "المقارنة بين المناطق متاحة في نسخة الشركات."
+        )
+
+    return t(
+        "This insight is based on AI-driven demand, risk, and price modeling.",
+        "هذه الرؤية مبنية على نماذج ذكاء اصطناعي للطلب والمخاطرة والأسعار."
+    )
+
+if user_question:
+    with st.spinner(t("SmartProp AI is thinking...", "SmartProp AI يفكر...")):
+        answer = ai_chat_response(
+            user_question,
+            area_data,
+            predicted_price,
+            recommendation
+        )
+    st.success(answer)
+
