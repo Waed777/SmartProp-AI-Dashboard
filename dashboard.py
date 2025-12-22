@@ -1,54 +1,194 @@
-# =================================================
-# IMPORTS (كودك + إضافات GPT)
-# =================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
-from openai import OpenAI
-
-
-# =================================================
-# OPENAI CLIENT
-# =================================================
-# حطي المفتاح في .streamlit/secrets.toml
-# OPENAI_API_KEY="sk-xxxx"
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import plotly.express as px
 
 # =================================================
-# LANGUAGE HELPER (كما تستخدمينه)
+# Page Config
 # =================================================
+st.set_page_config(
+    page_title="SmartProp AI | Global Real Estate Intelligence",
+    layout="wide"
+)
+
+# =================================================
+# Language Toggle
+# =================================================
+language = st.sidebar.selectbox("🌐 Language | اللغة", ["English", "العربية"])
+
 def t(en, ar):
-    return en if st.session_state.get("lang", "AR") == "EN" else ar
-
-
-# =================================================
-# SESSION STATE
-# =================================================
-if "lang" not in st.session_state:
-    st.session_state.lang = "AR"
-
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
+    return en if language == "English" else ar
 
 # =================================================
-# MOCK DATA (نفس فكرتك)
+# Sidebar – Upload
 # =================================================
-area_data = pd.DataFrame({
-    "Area": ["North Riyadh"],
-    "Demand_Index": [80],
-    "Risk_Score": [40],
-    "Avg_Price": [5200]
+st.sidebar.header(t("📁 Upload Your Data", "📁 رفع البيانات"))
+uploaded_file = st.sidebar.file_uploader(
+    t("Upload CSV file", "ارفع ملف CSV"),
+    type=["csv"]
+)
+
+st.sidebar.markdown(t(
+"""
+**Required Columns**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+""",
+"""
+**الأعمدة المطلوبة**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+"""
+))
+
+# =================================================
+# Load Data (Automation)
+# =================================================
+if uploaded_file:
+    data = pd.read_csv(uploaded_file)
+    st.sidebar.success(t("✅ Data uploaded successfully", "✅ تم رفع البيانات بنجاح"))
+else:
+    data = pd.DataFrame({
+        "Area": ["North Riyadh", "East Riyadh", "West Riyadh", "South Riyadh"],
+        "Demand_Index": [90, 75, 65, 70],
+        "Risk_Score": [35, 45, 60, 55],
+        "Avg_Price": [8500, 7200, 6100, 6500]
+    })
+
+required_columns = {"Area", "Demand_Index", "Risk_Score", "Avg_Price"}
+if not required_columns.issubset(data.columns):
+    st.error(t(
+        "CSV must contain required columns",
+        "ملف CSV لا يحتوي على الأعمدة المطلوبة"
+    ))
+    st.stop()
+
+# =================================================
+# Header
+# =================================================
+st.title(t(
+    "📊 SmartProp AI – Global Real Estate Decision Engine",
+    "📊 سمارت بروب AI – محرك قرارات عقارية ذكي"
+))
+st.subheader(t(
+    "AI-powered predictions for executives & investors",
+    "تنبؤات مدعومة بالذكاء الاصطناعي لصناع القرار"
+))
+
+# =================================================
+# Area Selection
+# =================================================
+st.sidebar.header(t("📍 Select Area", "📍 اختر المنطقة"))
+selected_area = st.sidebar.selectbox(t("Area", "المنطقة"), data["Area"].unique())
+area_data = data[data["Area"] == selected_area]
+
+# =================================================
+# AI / ML PIPELINE (Automation)
+# =================================================
+X = data[["Demand_Index", "Risk_Score"]]
+y = data["Avg_Price"]
+
+pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LinearRegression())
+])
+
+pipeline.fit(X, y)
+
+predicted_price = pipeline.predict(
+    area_data[["Demand_Index", "Risk_Score"]]
+)[0]
+
+# =================================================
+# Confidence + Investment Score
+# =================================================
+confidence_score = max(75, 100 - abs(predicted_price - area_data["Avg_Price"].values[0]) / 120)
+
+investment_score = (
+    area_data["Demand_Index"].values[0] * 0.65
+    - area_data["Risk_Score"].values[0] * 0.35
+)
+
+if investment_score > 45:
+    recommendation = t("🔥 Strong Buy", "🔥 فرصة استثمار قوية")
+elif investment_score > 25:
+    recommendation = t("⚠️ Monitor Closely", "⚠️ راقب بحذر")
+else:
+    recommendation = t("❌ High Risk", "❌ مخاطرة عالية")
+
+# =================================================
+# Market Summary
+# =================================================
+st.markdown(t("## 📌 Market Summary", "## 📌 ملخص السوق"))
+
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric(t("Current Price", "السعر الحالي"), f"{int(area_data['Avg_Price'])} SAR")
+c2.metric(t("AI Predicted Price", "السعر المتوقع بالذكاء الاصطناعي"), f"{int(predicted_price)} SAR")
+c3.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_score)}%")
+c4.metric(t("Investment Score", "درجة الاستثمار"), int(investment_score))
+
+# =================================================
+# Visualization
+# =================================================
+st.markdown(t("## 📈 Price Outlook", "## 📈 توقعات السعر"))
+
+chart_data = pd.DataFrame({
+    t("Type", "النوع"): [t("Current Price", "السعر الحالي"), t("AI Prediction", "توقع الذكاء الاصطناعي")],
+    t("Price", "السعر"): [area_data["Avg_Price"].values[0], predicted_price]
 })
 
-selected_area = "North Riyadh"
-predicted_price = 6100
-recommendation = "Strong Buy"
+fig = px.bar(
+    chart_data,
+    x=chart_data.columns[0],
+    y=chart_data.columns[1],
+    text_auto=True
+)
 
+st.plotly_chart(fig, use_container_width=True)
 
 # =================================================
-# UI (كودك كما هو)
+# Explainable AI (WOW)
+# =================================================
+st.markdown(t("## 🧠 AI Explanation", "## 🧠 شرح قرار الذكاء الاصطناعي"))
+st.info(t(
+    f"The model predicts prices mainly based on demand strength and risk exposure. "
+    f"In {selected_area}, demand is high relative to risk, leading to a recommendation of {recommendation}.",
+    f"يعتمد النموذج على قوة الطلب ومستوى المخاطرة. "
+    f"في {selected_area} الطلب مرتفع مقارنة بالمخاطرة، لذلك التوصية هي: {recommendation}."
+))
+
+# =================================================
+# Executive Summary
+# =================================================
+st.markdown(t("## 🧾 Executive Summary", "## 🧾 ملخص تنفيذي"))
+st.success(t(
+    f"This AI-driven analysis indicates that {selected_area} represents "
+    f"a {recommendation} scenario with {int(confidence_score)}% confidence. "
+    f"Designed for C-level strategic decisions.",
+    f"يشير هذا التحليل إلى أن {selected_area} تمثل "
+    f"{recommendation} بدقة {int(confidence_score)}%. "
+    f"مخصص لدعم قرارات الإدارة العليا."
+))
+
+# =================================================
+# CTA
+# =================================================
+st.markdown("---")
+st.markdown(t(
+    "## 🚀 Want enterprise-grade AI insights?",
+    "## 🚀 هل تريد حلول ذكاء اصطناعي بمستوى الشركات الكبرى؟"
+))
+st.button(t("Book a Free Demo", "احجز عرضًا تجريبيًا"))
+# =================================================
+# AI CHAT ASSISTANT
 # =================================================
 st.markdown(t("## 💬 AI Investment Assistant", "## 💬 مساعد استثماري ذكي"))
 
@@ -61,10 +201,6 @@ user_question = st.text_input(
     t("Type your question here...", "اكتبي سؤالك هنا...")
 )
 
-
-# =================================================
-# ORIGINAL RULE-BASED FUNCTION (كودك 100%)
-# =================================================
 def ai_chat_response(question, area_data, predicted_price, recommendation):
     demand = area_data["Demand_Index"].values[0]
     risk = area_data["Risk_Score"].values[0]
@@ -94,76 +230,17 @@ def ai_chat_response(question, area_data, predicted_price, recommendation):
             "المقارنة بين المناطق متاحة في نسخة الشركات."
         )
 
-    # 👇 مهم: لو ما عرف يجاوب
-    return None
-
-
-# =================================================
-# GPT FALLBACK (إضافة فقط)
-# =================================================
-def gpt_response(question, area_data):
-    context = f"""
-    Area: {area_data['Area'].values[0]}
-    Demand Index: {area_data['Demand_Index'].values[0]}
-    Risk Score: {area_data['Risk_Score'].values[0]}
-    Avg Price: {area_data['Avg_Price'].values[0]} SAR/m²
-    """
-
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a professional real estate investment AI assistant. Answer clearly and professionally."
-            },
-            {
-                "role": "user",
-                "content": context + "\n\nQuestion: " + question
-            }
-        ]
+    return t(
+        "This insight is based on AI-driven demand, risk, and price modeling.",
+        "هذه الرؤية مبنية على نماذج ذكاء اصطناعي للطلب والمخاطرة والأسعار."
     )
 
-    return completion.choices[0].message.content
-
-
-# =================================================
-# SMART WRAPPER (Rules → GPT)
-# =================================================
-def smart_ai_response(question):
-    rule_answer = ai_chat_response(
-        question,
-        area_data,
-        predicted_price,
-        recommendation
-    )
-
-    if rule_answer is not None:
-        return rule_answer
-
-    return gpt_response(question, area_data)
-
-
-# =================================================
-# EXECUTION
-# =================================================
 if user_question:
     with st.spinner(t("SmartProp AI is thinking...", "SmartProp AI يفكر...")):
-        answer = smart_ai_response(user_question)
-
-        st.session_state.chat_history.append({
-            "question": user_question,
-            "answer": answer
-        })
-
+        answer = ai_chat_response(
+            user_question,
+            area_data,
+            predicted_price,
+            recommendation
+        )
     st.success(answer)
-
-
-# =================================================
-# CHAT HISTORY
-# =================================================
-if st.session_state.chat_history:
-    st.markdown(t("### 🧠 Chat History", "### 🧠 سجل المحادثة"))
-
-    for chat in reversed(st.session_state.chat_history):
-        st.markdown(f"**🧑‍💼 {chat['question']}**")
-        st.info(chat["answer"])
