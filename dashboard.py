@@ -1,6 +1,4 @@
 import streamlit as st
-
-import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -261,3 +259,4 @@ def ai_chat_response(question):
 if user_question:
     with st.spinner(t("SmartProp AI is thinking...", "SmartProp AI يفكر...")):
         st.success(ai_chat_response(user_question))
+
