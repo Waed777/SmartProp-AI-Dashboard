@@ -4,7 +4,9 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
 
-
+# =================================================
+# Page Config
+# =================================================
 st.set_page_config(
     page_title="SmartProp AI | Real Estate Intelligence",
     layout="wide"
@@ -29,19 +31,19 @@ uploaded_file = st.sidebar.file_uploader(
 
 st.sidebar.markdown(t(
     """
-    **Required CSV Columns:**
-    - Area
-    - Demand_Index
-    - Risk_Score
-    - Avg_Price
-    """,
+**Required CSV Columns:**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+""",
     """
-    **الأعمدة المطلوبة:**
-    - Area
-    - Demand_Index
-    - Risk_Score
-    - Avg_Price
-    """
+**الأعمدة المطلوبة:**
+- Area
+- Demand_Index
+- Risk_Score
+- Avg_Price
+"""
 ))
 
 # =================================================
@@ -90,10 +92,7 @@ y = data["Avg_Price"]
 
 model = LinearRegression()
 model.fit(X, y)
-
-predicted_price = model.predict(
-    area_data[["Demand_Index", "Risk_Score"]]
-)[0]
+predicted_price = model.predict(area_data[["Demand_Index", "Risk_Score"]])[0]
 
 # =================================================
 # Confidence Score
@@ -106,10 +105,7 @@ confidence_score = max(
 # =================================================
 # Investment Score & Decision Logic
 # =================================================
-investment_score = (
-    area_data["Demand_Index"].values[0] * 0.6
-    - area_data["Risk_Score"].values[0] * 0.4
-)
+investment_score = area_data["Demand_Index"].values[0]*0.6 - area_data["Risk_Score"].values[0]*0.4
 
 if investment_score > 40:
     recommendation = t("🔥 Strong Investment Opportunity", "🔥 فرصة استثمار قوية")
@@ -122,49 +118,21 @@ else:
 # Market Summary
 # =================================================
 st.markdown("## 📌 " + t("Market Summary", "ملخص السوق"))
-
 col1, col2, col3, col4 = st.columns(4)
-
-col1.metric(
-    t("Current Avg Price (SAR/m²)", "السعر الحالي (ريال/م²)"),
-    int(area_data["Avg_Price"].values[0])
-)
-
-col2.metric(
-    t("AI Predicted Price (SAR/m²)", "السعر المتوقع بالذكاء الاصطناعي"),
-    int(predicted_price)
-)
-
-col3.metric(
-    t("Prediction Confidence", "دقة التنبؤ"),
-    f"{int(confidence_score)}%"
-)
-
-col4.metric(
-    t("Investment Score", "مؤشر الاستثمار"),
-    int(investment_score)
-)
+col1.metric(t("Current Avg Price (SAR/m²)", "السعر الحالي (ريال/م²)"), int(area_data["Avg_Price"].values[0]))
+col2.metric(t("AI Predicted Price (SAR/m²)", "السعر المتوقع بالذكاء الاصطناعي"), int(predicted_price))
+col3.metric(t("Prediction Confidence", "دقة التنبؤ"), f"{int(confidence_score)}%")
+col4.metric(t("Investment Score", "مؤشر الاستثمار"), int(investment_score))
 
 # =================================================
 # Visualization
 # =================================================
 st.markdown("## 📈 " + t("Price Outlook", "توقعات السعر"))
-
 chart_data = pd.DataFrame({
     t("Type", "النوع"): [t("Current Price", "السعر الحالي"), t("AI Predicted Price", "السعر المتوقع")],
-    t("Price", "السعر"): [
-        area_data["Avg_Price"].values[0],
-        predicted_price
-    ]
+    t("Price", "السعر"): [area_data["Avg_Price"].values[0], predicted_price]
 })
-
-fig = px.bar(
-    chart_data,
-    x=chart_data.columns[0],
-    y=chart_data.columns[1],
-    text_auto=True
-)
-
+fig = px.bar(chart_data, x=chart_data.columns[0], y=chart_data.columns[1], text_auto=True)
 st.plotly_chart(fig, use_container_width=True)
 
 # =================================================
@@ -172,20 +140,15 @@ st.plotly_chart(fig, use_container_width=True)
 # =================================================
 st.markdown("## 🧠 " + t("AI Insight", "رؤية الذكاء الاصطناعي"))
 st.info(t(
-    f"The AI model forecasts an average price of {int(predicted_price)} SAR/m² "
-    f"in {selected_area}. Recommendation: {recommendation}.",
-    f"يتوقع نموذج الذكاء الاصطناعي سعرًا متوسطه {int(predicted_price)} ريال/م² "
-    f"في {selected_area}. التوصية: {recommendation}."
+    f"The AI model forecasts an average price of {int(predicted_price)} SAR/m² in {selected_area}. Recommendation: {recommendation}.",
+    f"يتوقع نموذج الذكاء الاصطناعي سعرًا متوسطه {int(predicted_price)} ريال/م² في {selected_area}. التوصية: {recommendation}."
 ))
 
 # =================================================
-# AI CHAT ASSISTANT
+# AI Chat Assistant
 # =================================================
 st.markdown("## 💬 " + t("AI Investment Assistant", "مساعد استثماري ذكي"))
-
-user_question = st.text_input(
-    t("Ask SmartProp AI about this market...", "اسألي SmartProp AI عن هذا السوق...")
-)
+user_question = st.text_input(t("Ask SmartProp AI about this market...", "اسألي SmartProp AI عن هذا السوق..."))
 
 def ai_chat_response(question):
     demand = area_data["Demand_Index"].values[0]
@@ -193,23 +156,17 @@ def ai_chat_response(question):
     current_price = area_data["Avg_Price"].values[0]
 
     if "why" in question.lower() or "ليش" in question:
-        return t(
-            f"The decision is based on demand ({demand}) and risk ({risk}).",
-            f"القرار مبني على الطلب ({demand}) والمخاطرة ({risk})."
-        )
+        return t(f"The decision is based on demand ({demand}) and risk ({risk}).",
+                 f"القرار مبني على الطلب ({demand}) والمخاطرة ({risk}).")
 
     if "invest" in question.lower() or "استثمار" in question:
         return t(
-            f"{selected_area} shows a predicted price of {int(predicted_price)} SAR/m² "
-            f"vs current {current_price}. Recommendation: {recommendation}.",
-            f"{selected_area} يظهر سعرًا متوقعًا {int(predicted_price)} ريال/م² "
-            f"مقارنة بالحالي {current_price}. التوصية: {recommendation}."
+            f"{selected_area} shows a predicted price of {int(predicted_price)} SAR/m² vs current {current_price}. Recommendation: {recommendation}.",
+            f"{selected_area} يظهر سعرًا متوقعًا {int(predicted_price)} ريال/م² مقارنة بالحالي {current_price}. التوصية: {recommendation}."
         )
 
-    return t(
-        "This insight is generated using AI-driven demand and risk analysis.",
-        "هذه الرؤية ناتجة عن تحليل الذكاء الاصطناعي للطلب والمخاطرة."
-    )
+    return t("This insight is generated using AI-driven demand and risk analysis.",
+             "هذه الرؤية ناتجة عن تحليل الذكاء الاصطناعي للطلب والمخاطرة.")
 
 if user_question:
     with st.spinner(t("SmartProp AI is thinking...", "SmartProp AI يفكر...")):
@@ -219,8 +176,5 @@ if user_question:
 # CTA
 # =================================================
 st.markdown("---")
-st.markdown("## 🚀 " + t(
-    "Ready for full AI-powered market access?",
-    "جاهزة للوصول الكامل لذكاء السوق؟"
-))
+st.markdown("## 🚀 " + t("Ready for full AI-powered market access?", "جاهزة للوصول الكامل لذكاء السوق؟"))
 st.button(t("Book a Free Demo", "احجزي عرضًا تجريبيًا مجانيًا"))
