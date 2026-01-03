@@ -4,9 +4,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
 
-# =================================================
-# Page Config
-# =================================================
+
 st.set_page_config(
     page_title="SmartProp AI | Real Estate Intelligence",
     layout="wide"
