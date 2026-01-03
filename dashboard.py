@@ -235,7 +235,6 @@ user_question = st.text_input(
 def ai_chat_response(question):
     demand = area_data["Demand_Index"].values[0]
     risk = area_data["Risk_Score"].values[0]
-
     q = question.lower()
 
     if "why" in q or "ليش" in q:
